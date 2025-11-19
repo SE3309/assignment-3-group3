@@ -2,9 +2,9 @@ USE mgmtsys;
 
 CREATE TABLE Employee(
     employee_id INT,
+    email VARCHAR(100) NOT NULL,
     f_name VARCHAR(50) NOT NULL,
     l_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
     birthday DATE NOT NULL,
     hours_worked SMALLINT NOT NULL,
     salary DECIMAL(10,2) NOT NULL,
@@ -55,12 +55,12 @@ DESCRIBE Store;
 
 CREATE TABLE Customer(
     customer_id INT,
+    email VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(50) NOT NULL,
     f_name VARCHAR(50) NOT NULL,
     l_name VARCHAR(50) NOT NULL,
-    phone_number VARCHAR(50) NOT NULL,
     birthday DATE NOT NULL,
     gender VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
 
     PRIMARY KEY(customer_id),
     UNIQUE(email),
@@ -99,12 +99,12 @@ DESCRIBE Supplies;
 
 CREATE TABLE Supplier(
     supplier_id INT,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
     supplier_name VARCHAR(50) NOT NULL,
     street VARCHAR(50) NOT NULL,
     city VARCHAR(15) NOT NULL,
     postcode VARCHAR(7) NOT NULL,
-    phone VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
 
     PRIMARY KEY(supplier_id),
     UNIQUE(email),
