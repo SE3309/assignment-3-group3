@@ -9,9 +9,9 @@ import os
 import sys
 import pathlib
 import random
+import string
 from csv import DictReader
 from collections.abc import Callable
-# from typing import cast
 from functools import partial
 from faker import Faker
 
@@ -32,7 +32,7 @@ if(len(sys.argv) > 1 and sys.argv[1] == "new"):
 def create_table(file_name: str, num_tuples: int,
                  attr_list: list[str], pk_list: list[str],
                  fk_list: dict[str, str], callable_list: list[Callable[[], object]],
-                 exclude: dict[str, list[str]] = {}):
+                 exclude: dict[str, list[str]] = {}, ck_list: list[str] = []):
 
     write_sql(file_name)
     if(sql):
@@ -53,10 +53,19 @@ def create_table(file_name: str, num_tuples: int,
     for pk in pk_list:
         key_columns.append(set())
 
+    # if ck
+    ck_index: list[int] = []
+    for i in range(len(attr_list)):
+        if attr_list[i] in ck_list:
+            ck_index.append(i)
+    ck_usable = gen_ck(ck_list, fk_columns, callable_list, ck_index)
+    ck_count = 0
+
     # entries
     with open(file_name+".csv", "a") as f:
         for i in range(num_tuples):
-            entry = gen_entry(attr_list, callable_list, fk_columns, key_columns)
+            entry = gen_entry(attr_list, callable_list, fk_columns, key_columns, ck_list, ck_usable, ck_count, ck_index, pk_list)
+            ck_count += 1
             _ = f.write(entry+"\n")
 
 
@@ -70,15 +79,37 @@ def init_table(attr_list: list[str]) -> str:
     return header[:-1]
 
 # populate entry
-def gen_entry(attr_list: list[str], callable_list: list[Callable[[], object]], fk_columns: dict[str, list[str]], key_columns: list[set[str]]) -> str:
+# don't look at this ungodly mess please
+def gen_entry(attr_list: list[str], callable_list: list[Callable[[], object]],
+              fk_columns: dict[str, list[str]], key_columns: list[set[str]],
+              ck_list: list[str], ck_usable: list[list[str]], ck_count: int,
+              ck_index: list[int], pk_list: list[str]) -> str:
+
     entry: str=""
 
     col = 0
     while col < len(callable_list):
+        attr = attr_list[col]
+        is_ck = False
+
+
+        # composite entries
+        if attr in ck_list and ck_count < len(ck_usable[0]):
+            entry += ck_usable[ck_index[col]][ck_count]+","
+            col+=1
+            continue
+
         # get val from existing fk val
-        if attr_list[col] in fk_columns:
-            rand = random.randrange(1, len(fk_columns[attr_list[col]]))
-            command = fk_columns[attr_list[col]][rand]
+        if attr in fk_columns:
+            if attr not in pk_list:
+                rand = random.randint(0, len(fk_columns[attr])-1)
+                selected = fk_columns[attr][rand]
+            else:
+                selected = fk_columns[attr][len(fk_columns[attr])-1]
+                _ = fk_columns[attr].pop()
+
+            command = selected
+
         # else generate val via faker
         else:
             command = str(callable_list[col]())
@@ -94,6 +125,36 @@ def gen_entry(attr_list: list[str], callable_list: list[Callable[[], object]], f
         col+=1
 
     return entry[:-1]
+
+# :sob:
+def gen_ck(ck_list: list[str], fk_columns: dict[str, list[str]], callable_list: list[Callable[[], object]], ck_callables: list[int]):
+    pow_len = pow(2, len(ck_list))
+
+    ck_usable: list[list[str]] = [[]] * len(ck_list)
+    n = len(ck_usable)
+    for i in range(n):
+        ck_usable[i] = [0] * pow_len
+
+    for i in range(n):
+        pk = ck_list[i]
+        index = ck_callables[i]
+        curr = str(callable_list[index]())
+
+        for j in range(pow_len):
+            if pk in fk_columns:
+                selected = fk_columns[pk][len(fk_columns[pk])-1]
+                ck_usable[i][j] = selected
+
+                if not ((j+1) % (pow(2, n-i-1))):
+                    _ = fk_columns[pk].pop()
+
+            else:
+                ck_usable[i][j] = curr
+
+                if not ((j+1) % (pow(2, n-i-1))):
+                    curr = str(callable_list[index]())
+
+    return ck_usable
 
 # get fk values
 def get_fk_values(fk_list: dict[str, str], exclude: dict[str, list[str]]) -> dict[str, list[str]]:
@@ -150,98 +211,108 @@ def ordered_date():
         counter-=1
         return "2000-01-02"
 
+def rand_string():
+    out = ""
+    for i in range(10):
+        out+=random.choice(string.ascii_letters)
+
+    return out
+
+
 # some functions
 default = partial(faker.pystr, min_chars=3, max_chars=10)
-int = partial(random.randint, 0, 10000000)
+sql_int = partial(random.randint, 0, 10000000)
 small_int = partial(random.randint, 0, 1000)
 small_decimal = partial(faker.pydecimal, min_value=0, max_value=9.0, right_digits=2)
 large_decimal = partial(faker.pydecimal, min_value=0, max_value=100000.0, right_digits=2)
+discount = partial(faker.pydecimal, min_value=0, max_value=0.99, right_digits=2)
+hours = partial(random.randint, 0, 50)
 
 # tables
 create_table("Employee", 2000,
              ["employee_id", "email", "f_name", "l_name", "birthday", "hours_worked", "salary"],            # attributes
              ["employee_id", "email"],                                                                      # keys (pk + ak)
              {},                                                                                            # foreign keys
-             [int, faker.email, faker.first_name, faker.last_name, faker.date, small_int, small_decimal]    # callable
+             [sql_int, faker.email, faker.first_name, faker.last_name, faker.date, hours, small_decimal]    # callable
              )
 create_table("SalesAssociate", 1000,
              ["employee_id", "commission_rate"],
              ["employee_id"],
              {"employee_id": "Employee"},
-             [int, small_decimal]
+             [sql_int, small_decimal]
              )
 create_table("Manager", 100,
              ["employee_id", "bonus_rate"],
              ["employee_id"],
              {"employee_id": "Employee"},
-             [int, small_decimal],
+             [sql_int, small_decimal],
              exclude = {"employee_id": ["SalesAssociate"]})
 create_table("Store", 75,
-             ["store_id", "street", "city", "postcode", "employee_id"],
+             ["store_id", "employee_id", "street", "city", "postcode"],
              ["store_id", "employee_id"],
              {"employee_id": "Manager"},
-             [int, faker.street_address, faker.city, faker.postcode, int]
+             [sql_int, sql_int, faker.street_address, faker.word, faker.postcode]
              )
 create_table("Customer", 500,
-             ["customer_id", "f_name", "l_name", "phone_number", "birthday", "gender", "email"],
+             ["customer_id", "email", "phone_number", "f_name", "l_name", "birthday", "gender"],
              ["customer_id", "email", "phone_number"],
              {},
-             [int, faker.first_name, faker.last_name, faker.phone_number, faker.date, faker.passport_gender, faker.email]
+             [sql_int, faker.email, faker.phone_number, faker.first_name, faker.last_name, faker.date, faker.passport_gender]
              )
 create_table("Warehouse", 12,
              ["warehouse_id", "street", "city", "postcode", "sqft", "capacity"],
              ["warehouse_id"],
              {},
-             [int, faker.street_address, faker.city, faker.postcode, large_decimal, int]
+             [sql_int, faker.street_address, faker.word, faker.postcode, large_decimal, sql_int]
              )
-# TODO: compound keys
-create_table("Supplies", 5,#1000,
+create_table("Supplies", 10,
              ["store_id", "warehouse_id"],
              ["store_id", "warehouse_id"],
              {"store_id": "Store", "warehouse_id": "Warehouse"},
-             [int, int]
+             [sql_int, sql_int],
+             ck_list = ["store_id", "warehouse_id"],
              )
 create_table("Supplier", 250,
-             ["supplier_id", "supplier_name", "street", "city", "postcode", "phone", "email"],
+             ["supplier_id", "email", "phone", "supplier_name", "street", "city", "postcode"],
              ["supplier_id", "email", "phone"],
              {},
-             [int, faker.word, faker.street_address, faker.city, faker.postcode, faker.phone_number, faker.company_email]
+             [sql_int, faker.email, faker.phone_number, faker.word, faker.street_address, faker.city, faker.postcode]
              )
 create_table("Product", 10000,
              ["product_id", "product_name", "brand", "category", "discount", "pricing", "supplier_id", "warehouse_id"],
              ["product_id"],
              {"warehouse_id": "Warehouse", "supplier_id": "Supplier"},
-             [int, faker.word, faker.word, faker.word, small_decimal, large_decimal, int, int]
+             [sql_int, faker.word, faker.word, faker.word, discount, large_decimal, sql_int, sql_int]
              )
 create_table("Shipment", 1000,
              ["shipment_id", "store_id", "supplier_id", "order_date", "arrival_date", "num_pallet", "cost"],
              ["shipment_id"],
              {"store_id": "Store", "supplier_id": "Supplier"},
-             [int, int, int, ordered_date, ordered_date, int, large_decimal]
+             [sql_int, sql_int, sql_int, ordered_date, ordered_date, sql_int, large_decimal]
              )
-# another compound key
-create_table("ProductShipment", 5,#1000,
+create_table("ProductShipment", 1000,
              ["shipment_id", "product_id"],
              ["shipment_id", "product_id"],
              {"shipment_id": "Shipment", "product_id": "Product"},
-             [int, int]
+             [sql_int, sql_int],
+             ck_list = ["shipment_id", "product_id"],
              )
 create_table("Sale", 10,
              ["sale_id", "order_type", "customer_id", "employee_id", "product_id", "store_id", "sale_date"],
              ["sale_id"],
              {"customer_id": "Customer", "employee_id": "Employee", "product_id": "Product", "store_id": "Store"},
-             [int, faker.word, int, int, int, int, faker.date]
+             [sql_int, faker.word, sql_int, sql_int, sql_int, sql_int, faker.date]
              )
 create_table("Advertisement", 10,
              ["ad_id", "ad_name", "channels", "budget", "product_id", "start_date", "end_date"],
              ["ad_id"],
              {},
-             [int, faker.word, faker.word, large_decimal, ordered_date, ordered_date]
+             [sql_int, faker.word, faker.word, large_decimal, ordered_date, ordered_date]
              )
 # another composite
 create_table("Ad_Product", 5,#100,
              ["ad_id", "product_id"],
              ["ad_id", "product_id"],
              {"ad_id": "Advertisement", "product_id": "Product"},
-             [int, int]
+             [sql_int, sql_int]
              )
