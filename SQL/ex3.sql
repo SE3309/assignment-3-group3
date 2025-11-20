@@ -1,5 +1,6 @@
 USE mgmtsys;
 
+-- MEANINGFUL DATA --
 INSERT INTO Employee
 VALUES (1, 'john.doe@example.com', 'John', 'Doe', '1990-05-10', 40, 55000.00);
 
@@ -9,73 +10,52 @@ VALUES (2, 'kathryneaton@example.org', 'Kathrylll', 'Neaton', '1990-05-10', 40, 
 INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
 SELECT 3, 'dlopez@example.org', 'Dwight', 'Lopez', '1985-07-25', 35, 60000.00;
 
-SELECT * FROM Employee;
-
--- MEANINGFUL DATA --
-
 -- Employee
-INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
-VALUES (1, 'alicejones@example.com', 'Alice', 'Jones', '1985-09-22', 40, 60000.00);
+-- 1. Create 10 Employees first (Base Table)
+SELECT * FROM employee;
+INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary) VALUES
+(4, 'alice.jones@example.com', 'Alice', 'Jones', '1985-09-22', 40, 60000.00),
+(5, 'bob.martin@example.com', 'Bob', 'Martin', '1990-02-15', 35, 55000.00),
+(6, 'charlie.brown@example.com', 'Charlie', 'Brown', '1987-07-30', 45, 65000.00),
+(7, 'diana.wilson@example.com', 'Diana', 'Wilson', '1992-03-18', 40, 57000.00),
+(8, 'ethan.miller@example.com', 'Ethan', 'Miller', '1984-11-25', 50, 70000.00),
+(9, 'fiona.white@example.com', 'Fiona', 'White', '1991-05-12', 40, 72000.00),
+(10, 'george.hall@example.com', 'George', 'Hall', '1988-08-08', 42, 68000.00),
+(11, 'hannah.clark@example.com', 'Hannah', 'Clark', '1993-12-01', 38, 64000.00),
+(12, 'ian.lewis@example.com', 'Ian', 'Lewis', '1982-04-14', 48, 80000.00),
+(13, 'julia.walker@example.com', 'Julia', 'Walker', '1995-06-20', 40, 59000.00);
 
-INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
-VALUES (2, 'bobmartin@example.com', 'Bob', 'Martin', '1990-02-15', 35, 55000.00);
+-- 2. Assign the first 5 to SalesAssociate
+INSERT INTO SalesAssociate (employee_id, commission_rate) VALUES
+(4, 0.05),
+(5, 0.04),
+(6, 0.06),
+(7, 0.05),
+(8, 0.07);
 
-INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
-VALUES (3, 'charliebrown@example.com', 'Charlie', 'Brown', '1987-07-30', 45, 65000.00);
-
-INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
-VALUES (4, 'dianawilson@example.com', 'Diana', 'Wilson', '1992-03-18', 40, 57000.00);
-
-INSERT INTO Employee (employee_id, email, f_name, l_name, birthday, hours_worked, salary)
-VALUES (5, 'ethanmiller@example.com', 'Ethan', 'Miller', '1984-11-25', 50, 70000.00);
-
--- Sales Associate
-INSERT INTO SalesAssociate (employee_id, commission_rate)
-VALUES (1, 0.05);
-
-INSERT INTO SalesAssociate (employee_id, commission_rate)
-VALUES (2, 0.04);
-
-INSERT INTO SalesAssociate (employee_id, commission_rate)
-VALUES (3, 0.06);
-
-INSERT INTO SalesAssociate (employee_id, commission_rate)
-VALUES (4, 0.05);
-
-INSERT INTO SalesAssociate (employee_id, commission_rate)
-VALUES (5, 0.07);
-
--- Manager
-INSERT INTO Manager (employee_id, bonus_rate)
-VALUES (3, 0.10);
-
-INSERT INTO Manager (employee_id, bonus_rate)
-VALUES (4, 0.12);
-
-INSERT INTO Manager (employee_id, bonus_rate)
-VALUES (5, 0.15);
-
-INSERT INTO Manager (employee_id, bonus_rate)
-VALUES (6, 0.08);
-
-INSERT INTO Manager (employee_id, bonus_rate)
-VALUES (7, 0.09);
+-- 3. Assign the remaining 5 to Manager
+INSERT INTO Manager (employee_id, bonus_rate) VALUES
+(9, 0.10),
+(10, 0.12),
+(11, 0.09),
+(12, 0.15),
+(13, 0.08);
 
 -- Store
 INSERT INTO Store (store_id, street, city, postcode, employee_id)
-VALUES (101, '123 Maple Street', 'Springfield', '62701', 3);
+VALUES (101, '123 Maple Street', 'Springfield', '62701', 9);
 
 INSERT INTO Store (store_id, street, city, postcode, employee_id)
-VALUES (102, '456 Oak Avenue', 'Chicago', '60601', 4);
+VALUES (102, '456 Oak Avenue', 'Chicago', '60601', 10);
 
 INSERT INTO Store (store_id, street, city, postcode, employee_id)
-VALUES (103, '789 Pine Road', 'New York', '10001', 5);
+VALUES (103, '789 Pine Road', 'New York', '10001', 11);
 
 INSERT INTO Store (store_id, street, city, postcode, employee_id)
-VALUES (104, '101 Birch Lane', 'Los Angeles', '90001', 6);
+VALUES (104, '101 Birch Lane', 'Los Angeles', '90001', 12);
 
 INSERT INTO Store (store_id, street, city, postcode, employee_id)
-VALUES (105, '202 Cedar Blvd', 'Austin', '73301', 7);
+VALUES (105, '202 Cedar Blvd', 'Austin', '73301', 13);
 
 -- Customer
 INSERT INTO Customer (customer_id, f_name, l_name, phone_number, birthday, gender, email)
@@ -204,6 +184,15 @@ VALUES (4, 'Online', 4, 4, 4, 104, '2025-10-04');
 
 INSERT INTO Sale (sale_id, order_type, customer_id, employee_id, product_id, store_id, sale_date)
 VALUES (5, 'In-Store', 5, 5, 5, 105, '2025-10-05');
+
+INSERT INTO Sale (sale_id, order_type, customer_id, employee_id, product_id, store_id, sale_date)
+VALUES (6, 'In-Store', 1, 5, 5, 105, '2025-10-05');
+INSERT INTO Sale (sale_id, order_type, customer_id, employee_id, product_id, store_id, sale_date)
+VALUES (7, 'In-Store', 2, 5, 5, 105, '2025-10-05');
+INSERT INTO Sale (sale_id, order_type, customer_id, employee_id, product_id, store_id, sale_date)
+VALUES (8, 'In-Store', 3, 5, 5, 105, '2025-10-05');
+INSERT INTO Sale (sale_id, order_type, customer_id, employee_id, product_id, store_id, sale_date)
+VALUES (9, 'In-Store', 4, 5, 5, 105, '2025-10-05');
 
 -- Advertisement
 INSERT INTO Advertisement (ad_id, ad_name, channels, budget, start_date, end_date)
