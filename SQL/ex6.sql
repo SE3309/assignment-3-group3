@@ -3,7 +3,7 @@ USE mgmtsys;
 SELECT * FROM sale WHERE sale_date >= DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH);
 INSERT INTO Shipment (shipment_id, store_id, supplier_id, order_date, arrival_date, num_pallet, cost)
 SELECT 
-    126734986,                     -- new shipment ID
+    126734986,  -- new shipment ID --
     s.store_id,
     p.supplier_id,
     CURRENT_DATE,
@@ -18,7 +18,7 @@ HAVING COUNT(s.product_id) >= 3;
 
 -- Giving top 3 (or more if theres a tie) performing sales associates for the year a raise in commision rate --
 UPDATE salesassociate
-SET commission_rate = commission_rate + 0.05 -- !!! is this 5% or .05% !!! --
+SET commission_rate = commission_rate + 0.05 
 WHERE employee_id IN (
     SELECT employee_id 
     FROM sale
